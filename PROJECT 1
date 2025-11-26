@@ -1,0 +1,80 @@
+PROJECT 1 
+ETL DATA PIPELINE:
+
+
+import pandas as pd
+from sklearn.preprocessing import StandardScaler, OneHotEncoder
+from sklearn.compose import ColumnTransformer
+from sklearn.pipeline import Pipeline
+import numpy as np
+
+def run_etl_pipeline(input_filepath: str, output_filepath: str):
+    """Runs the complete ETL pipeline on the Input CSV file."""
+    """
+    Args:
+        Input_filepath (str): The path to the raw data CSV file.
+        output_filepath (str): The path to save the cleaned data CSV file.
+    """
+    print("...Starting ETL Pipeline...")
+    # 1. EXTRACT: Load the data
+    try:
+        df = pd.read_csv(input_filepath)
+        print(f" Data extracted successfully from {input_filepath} .")
+        print("\nInitial Data Head:\n", df.head())
+    except FileNotFoundError:
+        print("X Error: Input file not found at (input_filepath).")
+        return
+    # 2. TRANSFORM: Clean and preprocess data
+    #
+    print("\n Starting data transformation...")
+# Handle duplicate entries
+    initial_rows = len(df)
+    df.drop_duplicates(inplace=True)
+    print(f" {initial_rows - len(df)} duplicate rows removed.")
+    # Separate features and identify column types
+    # We will exclude 'ID' from transformations
+    df_features = df.drop(columns=['ID'])
+    numerical_cols = df_features.select_dtypes(include=np.number).columns
+    categorical_cols = df_features.select_dtypes(include=['object']).columns
+    print(f"Numerical columns identified: {list(numerical_cols)}")
+    print(f"Categorical columns identified: {list(categorical_cols)}")
+    # Handle missing values
+    # For numerical columns, we fill with the median (robust to outliers)
+    for col in numerical_cols:
+        median_val = df[col].median()
+        df[col].fillna(median_val, inplace=True)
+    # For categorical columns, we fill with the mode (most frequent value)
+    for col in categorical_cols:
+        mode_val = df[col].mode()[0]
+        df[col].fillna(mode_val, inplace=True)
+    print(" Missing values handled.")
+    # Create preprocessing pipelines for numerical and categorical features
+    numerical_transformer = StandardScaler()
+    categorical_transformer = OneHotEncoder(handle_unknown='ignore', drop='first')
+    # Create a column transformer to apply different transformations to different columns
+    preprocessor = ColumnTransformer(
+        transformers=[
+            ('num', numerical_transformer, numerical_cols),
+            ('cat', categorical_transformer, categorical_cols)
+        ])
+    # Apply the transformations
+    processed_features = preprocessor.fit_transform(df)
+    # Get the new column names after one-hot encoding
+    new_cat_cols = preprocessor.named_transformers_['cat'].get_feature_names_out(categorical_cols)
+    all_new_cols = list(numerical_cols) + list(new_cat_cols)
+    # Create the final cleaned DataFrame
+    cleaned_df = pd.DataFrame(processed_features, columns=all_new_cols)
+    print(" Numerical features scaled and categorical features encoded.")
+    print("\nCleaned Data Head: \n", cleaned_df.head())
+    #
+    # 3. LOAD: Save the cleaned data
+    try:
+        cleaned_df.to_csv(output_filepath, index=False)
+        print(f"\n ETL Pipeline finished. Cleaned data saved to {output_filepath} .")
+    except Exception as e:
+        print(f"X Error saving file: {e}")
+# Main execution block
+if __name__ == "__main__":
+    INPUT_FILE = 'raw_data.csv'
+    OUTPUT_FILE = 'cleaned_data.csv'
+    run_etl_pipeline(INPUT_FILE, OUTPUT_FILE)
