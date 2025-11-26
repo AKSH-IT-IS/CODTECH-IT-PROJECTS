@@ -1,0 +1,52 @@
+PROJECT 4
+OPTIMISATION MODEL
+
+from pulp import LpProblem, LpMaximize, LpVariable, LpStatus, value
+
+def solve_production_problem():
+    """Formulates and solves the product mix optimization problem using PuLP."""
+    print(" Starting the Optimization Model...")
+    # 1. Initialize the Model
+    # We define a problem variable, naming it "Maximize Profit"
+    # LpMaximize indicates that our objective is to maximize a value
+    model = LpProblem(name="Maximize_Profit", sense=LpMaximize)
+    print(" Optimization model initialized.")
+    #
+    # 2. Define Decision Variables
+    # These are the quantities we want to find the optimal values for.
+    # We can't produce a negative number of products, so lowBound is 0.
+    # We also can't produce fractions of a product, so the category is 'Integer'.
+    product_a_units = LpVariable(name="Product_A_Units", lowBound=0, cat='Integer')
+    product_b_units = LpVariable(name="Product_B_Units", lowBound=0, cat='Integer')
+    print(" Decision variables defined.")
+    #
+    # 3. Define the Objective Function
+    # This is the function we want to maximize.
+    # It's the total profit from producing both products.
+    model += 50 * product_a_units + 40 * product_b_units, "Total Profit"
+    print(" Objective function defined.")
+    # 4. Define the Constraints
+    # These are the limitations on our resources.
+    # The total resources used cannot exceed what is available.
+    model += (2 * product_a_units + 1 * product_b_units <= 100, "Labor_Constraint")
+    model += (1 * product_a_units + 2 * product_b_units <= 120, "Material_Constraint")
+    print(" Constraints defined.")
+    # 5. Solve the Model
+    print("\n Solving the linear programming problem...")
+    status = model.solve()
+    print(" Problem solved.")
+    # 6. Display the Results
+    print("\n----------- Optimal Solution -----------")
+    print(f"Status: {LpStatus[status]}")
+    # Print the optimal values of the decision variables
+    print("Optimal Production Quantities:")
+    for variable in model.variables():
+        print(f"  {variable.name}: {variable.varValue}")
+    # Print the maximum objective function value (total profit)
+    print(f"Maximum Profit Achievable: ${value(model.objective):.2f}")
+print("-------------------------------------\n")
+    print(" Project finished.")
+
+# Main execution block
+if __name__ == "__main__":
+    solve_production_problem()
