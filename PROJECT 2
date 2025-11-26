@@ -1,0 +1,98 @@
+PROJECT 2
+DEEP LEARNING MODEL(IMAGE CLASSIFICATION)
+
+import tensorflow as tf
+import numpy as np
+import matplotlib.pyplot as plt
+
+def build_cnn_model():
+    """Defines and compiles the Convolutional Neural Network (CNN) model."""
+    """
+    Returns:
+        A compiled TensorFlow Keras model.
+    """
+    print(" Building the CNN model...")
+    model = tf.keras.Sequential([
+        # Input/Convolution layers: Any layer for feature extraction
+        tf.keras.layers.Conv2D(32, (3, 3), activation='relu', input_shape=(28, 28, 1)),
+        # Pooling Layer: Downsamples the feature map
+        tf.keras.layers.MaxPooling2D((2, 2)),
+        # Second Convolution and Pooling Layer
+        tf.keras.layers.Conv2D(64, (3, 3), activation='relu'),
+        tf.keras.layers.MaxPooling2D((2, 2)),
+        # Flatten Layer: Converts the 2D feature maps to a 1D vector
+        tf.keras.layers.Flatten(),
+        # Dense Layer: A fully connected layer for classification
+        tf.keras.layers.Dense(64, activation='relu'),
+        # Output Layer: 10 neurons (one for each digit 0-9) with softmax activation
+        tf.keras.layers.Dense(10, activation='softmax')
+    ])
+    # Compile the model
+    model.compile(optimizer='adam',
+                  loss='categorical_crossentropy',
+                  metrics=['accuracy'])
+    print(" Model built and compiled successfully.")
+    return model
+
+def plot_training_history(history):
+    """Plots the model's accuracy and loss over the training epochs."""
+    """
+    Args:
+        history: The history object returned by the model.fit() method.
+    """
+    print(" Plotting training history...")
+    # Create a figure with two subplots
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(14, 5))
+    # Plot training & validation accuracy values
+    ax1.plot(history.history['accuracy'])
+    ax1.plot(history.history['val_accuracy'])
+    ax1.set_title('Model Accuracy')
+    ax1.set_ylabel('Accuracy')
+    ax1.set_xlabel('Epoch')
+    ax1.legend(['Train', 'Validation'], loc='upper left')
+ax1.grid(True)
+    # Plot training & validation loss values
+    ax2.plot(history.history['loss'])
+    ax2.plot(history.history['val_loss'])
+    ax2.set_title('Model Loss')
+    ax2.set_ylabel('Loss')
+    ax2.set_xlabel('Epoch')
+    ax2.legend(['Train', 'Validation'], loc='upper right')
+    ax2.grid(True)
+    plt.show()
+    print(" Plot displayed.")
+
+# Main execution block
+if __name__ == "__main__":
+    print(" Starting Image Classification Project...")
+    # 1. EXTRACT & TRANSFORM: Load and preprocess the MNIST dataset
+    print(" Loading and preprocessing MNIST data...")
+    mnist = tf.keras.datasets.mnist
+    (x_train, y_train), (x_test, y_test) = mnist.load_data()
+    # Normalize pixel values to be between 0 and 1
+    x_train, x_test = x_train / 255.0, x_test / 255.0
+    # Reshape the data to include a channel dimension (required for CNNs)
+    x_train = x_train[..., np.newaxis]
+    x_test = x_test[..., np.newaxis]
+    # One-hot encode the labels
+    y_train = tf.keras.utils.to_categorical(y_train, 10)
+    y_test = tf.keras.utils.to_categorical(y_test, 10)
+    print(" Data ready.")
+    # 2. BUILD THE MODEL
+    cnn_model = build_cnn_model()
+    cnn_model.summary()
+    # 3. TRAIN THE MODEL
+    print("\n Training the model...")
+    # Training for a few epochs as an example. 10-15 is common for good results.
+    history = cnn_model.fit(x_train, y_train,
+                            epochs=10,
+                            validation_split=0.2, # Use 20% of training data for validation
+                            verbose=1)
+    print(" Model training complete.")
+    # 4. EVALUATE THE MODEL
+    print("\n Evaluating the model on the test set...")
+    test_loss, test_acc = cnn_model.evaluate(x_test, y_test, verbose=2)
+    print(f"\nTest Accuracy: {test_acc*100:.2f}%")
+    # 5. VISUALIZE TRAINING RESULTS
+    plot_training_history(history)
+    print(" Project finished.")
